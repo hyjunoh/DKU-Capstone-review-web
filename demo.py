@@ -580,6 +580,35 @@ def verify_divergence(targets: dict[str, int]):
             assert_ok(False, f"TS-4 [{nm}] divergence 호출", str(e)[:80])
 
 
+def verify_chat():
+    """TS-6: AI 챗봇 추천 (ai-chatbot 통합 기능) — 엔드포인트·응답·입력검증."""
+    print(f"\n   {B}[ TS-6 AI 챗봇 추천 ]{RESET}")
+    try:
+        r = httpx.post(
+            f"{BACKEND_URL}/api/v1/chat/recommend",
+            json={"messages": [{"role": "user",
+                                "content": "I like open world games like GTA"}]},
+            timeout=180,
+        )
+        assert_ok(r.status_code == 200,
+                  "TS-6 chat/recommend HTTP 200", f"got {r.status_code}")
+        if r.status_code == 200:
+            reply = r.json().get("reply")
+            assert_ok(isinstance(reply, str) and bool(reply.strip()),
+                      "TS-6 reply 비어있지 않은 문자열",
+                      f"type={type(reply).__name__}")
+    except Exception as e:
+        assert_ok(False, "TS-6 chat/recommend 호출", str(e)[:80])
+
+    # TS-6 입력 검증: 빈 messages → 400
+    try:
+        rc = httpx.post(f"{BACKEND_URL}/api/v1/chat/recommend",
+                        json={"messages": []}, timeout=30).status_code
+        assert_ok(rc == 400, "TS-6 빈 messages → 400", f"got {rc}")
+    except Exception as e:
+        assert_ok(False, "TS-6 빈 messages 호출", str(e)[:80])
+
+
 def verify_regression():
     """TS-5: 폐지·회귀 정합 (sentiment-trend·demo 자기검사·GameEvent·pyc)."""
     print(f"\n   {B}[ TS-5 폐지·회귀 정합 ]{RESET}")
@@ -884,7 +913,7 @@ def main():
                         help="기능 A·C(buy-signal·highlights) 검증 건너뜀")
     parser.add_argument("--test", action="store_true",
                         help="테스트 모드: 시나리오 어서션 실행, 실패 시 exit code≠0")
-    parser.add_argument("--scenario", choices=["e2e", "A", "C", "D", "regression", "all"],
+    parser.add_argument("--scenario", choices=["e2e", "A", "C", "D", "chat", "regression", "all"],
                         default="all", help="실행 시나리오 선택 (기본 all)")
     parser.add_argument("--discount-appid", metavar="APPID", default=None,
                         help="TS-2 할인 케이스용 할인 게임 Steam appid 주입")
@@ -1028,6 +1057,8 @@ def main():
             verify_purchase_features(targets, assertions=True, args=args)
         if sc in ("D", "all"):
             verify_divergence(targets)
+        if sc in ("chat", "all"):
+            verify_chat()
         if sc in ("regression", "all"):
             verify_regression()
         all_pass = print_test_summary()
