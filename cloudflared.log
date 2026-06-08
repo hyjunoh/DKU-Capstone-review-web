@@ -1,0 +1,36 @@
+nohup: ignoring input
+2026-06-01T18:11:33Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-06-01T18:11:33Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-06-01T18:11:37Z INF +--------------------------------------------------------------------------------------------+
+2026-06-01T18:11:37Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-06-01T18:11:37Z INF | https://formerly-integral-regard-sara.trycloudflare.com                                    |
+2026-06-01T18:11:37Z INF +--------------------------------------------------------------------------------------------+
+2026-06-01T18:11:37Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp /etc/cloudflared /usr/local/etc/cloudflared]
+2026-06-01T18:11:37Z INF Version 2026.5.0 (Checksum 0095e46fdc88855d801c4d304cb1f5dd4bd656116c47ab94c2ad0ae7cda1c7ec)
+2026-06-01T18:11:37Z INF GOOS: linux, GOVersion: go1.26.2, GoArch: amd64
+2026-06-01T18:11:37Z INF Settings: map[ha-connections:1 protocol:quic url:http://localhost:80]
+2026-06-01T18:11:37Z INF cloudflared will not automatically update if installed by a package manager.
+2026-06-01T18:11:37Z INF Generated Connector ID: 8b97fc3f-6ec7-4877-87f2-a040f2eefa4e
+2026-06-01T18:11:37Z INF Initial protocol quic
+2026-06-01T18:11:37Z INF ICMP proxy will use 10.0.11.6 as source for IPv4
+2026-06-01T18:11:37Z INF ICMP proxy will use fe80::1c00:79ff:fe01:15e3 in zone ens3 as source for IPv6
+2026-06-01T18:11:37Z WRN The user running cloudflared process has a GID (group ID) that is not within ping_group_range. You might need to add that user to a group within that range, or instead update the range to encompass a group the user is already in by modifying /proc/sys/net/ipv4/ping_group_range. Otherwise cloudflared will not be able to ping this network error="Group ID 1000 is not between ping group 1 to 0"
+2026-06-01T18:11:37Z WRN ICMP proxy feature is disabled error="cannot create ICMPv4 proxy: Group ID 1000 is not between ping group 1 to 0 nor ICMPv6 proxy: socket: permission denied"
+2026-06-01T18:11:37Z INF ICMP proxy will use 10.0.11.6 as source for IPv4
+2026-06-01T18:11:37Z INF ICMP proxy will use fe80::1c00:79ff:fe01:15e3 in zone ens3 as source for IPv6
+2026-06-01T18:11:37Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-06-01T18:11:37Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.13
+2026/06/01 18:11:37 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+2026-06-01T18:11:37Z INF Registered tunnel connection connIndex=0 connection=c6f267c0-41a1-4596-9891-99672872f5a6 event=0 ip=198.41.200.13 location=icn01 protocol=quic
+2026-06-02T06:46:39Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://localhost:80
+2026-06-02T06:46:39Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://formerly-integral-regard-sara.trycloudflare.com/api/v1/games/61/buy-signal event=0 ip=198.41.200.13 type=http
+2026-06-02T07:11:41Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://localhost:80
+2026-06-02T07:11:41Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://formerly-integral-regard-sara.trycloudflare.com/api/v1/translate/batch event=0 ip=198.41.200.13 type=http
+2026-06-02T18:11:37Z WRN Your version 2026.5.0 is outdated. We recommend upgrading it to 2026.5.2
+2026-06-03T18:11:37Z WRN Your version 2026.5.0 is outdated. We recommend upgrading it to 2026.5.2
+2026-06-04T18:11:37Z WRN Your version 2026.5.0 is outdated. We recommend upgrading it to 2026.5.2
+2026-06-05T18:11:37Z WRN Your version 2026.5.0 is outdated. We recommend upgrading it to 2026.5.2
+2026-06-05T20:21:53Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://localhost:80
+2026-06-05T20:21:53Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://formerly-integral-regard-sara.trycloudflare.com/api/v1/games/buy-signals/bulk?ids=1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16%2C17%2C18%2C19%2C20%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C28%2C29%2C30%2C31%2C32%2C33%2C34%2C35%2C36%2C37%2C38%2C39%2C40%2C41%2C42%2C43%2C44%2C45%2C46%2C47%2C48%2C49%2C50%2C51%2C52%2C53%2C54%2C55%2C56%2C57%2C58%2C59%2C60%2C61%2C62%2C63%2C64%2C65%2C66%2C67%2C68%2C69%2C70%2C71%2C72%2C73%2C74%2C75%2C76%2C77%2C78%2C79%2C80%2C81%2C82%2C83%2C84%2C85%2C86%2C87%2C88%2C89%2C90%2C91%2C92%2C93%2C94%2C95%2C96%2C97%2C98%2C99%2C100 event=0 ip=198.41.200.13 type=http
+2026-06-06T18:11:37Z WRN Your version 2026.5.0 is outdated. We recommend upgrading it to 2026.5.2
+2026-06-07T18:11:37Z WRN Your version 2026.5.0 is outdated. We recommend upgrading it to 2026.5.2
