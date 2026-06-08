@@ -1,9 +1,9 @@
 # Layer 2 분석 — 결정성/재현성 (reduce 리플레이)
 
-**질문**: 같은 입력에 같은 점수가 나오는가? (설계 주장 "점수는 코드가 결정, LLM은 검증된 delta만 제안")
+**질문**: 같은 입력에 같은 점수가 나오는가?
 
-**방법**: 저장된 reduce payload(= Map 결과 고정)를 그대로 Reduce에 **5회 반복** 투입 → 매 회의
-sentiment_score(0~100)·aspect 점수(0~10) 분산 측정. Map 재실행 없음(=근거 고정).
+**방법**: 저장된 reduce payload(= Map 결과 고정)를 그대로 Reduce에 **5회 반복**  → 매 회의
+sentiment_score(0~100)·aspect 점수(0~10) 분산 측정.
 
 - 표본: 코어셋 중 payload 보유 게임. **5개 완료**(11·12·20·32·79). 원자료 `determinism_matrix.csv`, 요약 `determinism_summary.csv`.
 
@@ -38,9 +38,8 @@ sentiment_score(0~100)·aspect 점수(0~10) 분산 측정. Map 재실행 없음(
   설계 주장과 1:1로 맞지만, **end-to-end(원문→Map→Reduce) 재현성은 아니다.**
 - Map도 LLM이라 근거 추출이 매번 약간 다르므로, 원문부터 통째로 반복하면 변동은 **이보다 커진다.**
   즉 본 수치는 **최선의 경우(하한)**이며, 발표 시 "근거 고정 시" 조건을 명시한다.
-  (실제로 동일 game 79가 오프라인 캡처 sentiment 59 vs 라이브 78 — Map까지 다른 run이면 차이가 큼.)
 
-## 4. 발표 한 줄 (§3 2층 / ARCHITECTURE §14 보강)
+## 4. 발표 한 줄 (2층)
 > 같은 근거(payload)로 Reduce를 5회 반복하면 총점 표준편차 평균 ~1점(0~100)·항목 점수 ~0.12(0~10),
 > 2/5 게임은 총점 완전 불변. 즉 결정론 코드 baseline은 안정적이고 변동은 LLM의 검증된 delta에서만
-> 작게·경계 안에서 발생한다. (Map 고정 조건의 reduce 재현성이며, end-to-end는 별도.)
+> 작게·경계 안에서 발생한다. (Map 고정 조건의 reduce 재현성.)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""실험 3 — RAGAS faithfulness 지표 신뢰도 검증 (mismatched context / negative control).
+"""1층 B — RAGAS faithfulness 지표 신뢰도 검증 (mismatched context / negative control).
 
 질문: 헤드라인 faithfulness(0.931)가 실제로 "요약↔근거"의 충실도를 재는가(타당성)?
 방법: 요약(response)은 그대로 두고, RAGAS context만 **다른 게임의 근거**로 바꿔치기.
@@ -19,7 +19,7 @@
 
 출력 (이 폴더)
   - mismatched_results.csv : 게임별 orig/normal/mismatched faithfulness + 짝
-  - mismatched_report.md    : 집계·검정·해석
+  (집계·검정·해석은 ANALYSIS.md 'B. mismatched 검증'으로 통합 — 별도 리포트 미생성)
 
 실행 (격리 venv)
   /home/ubuntu/.venv-ragas/bin/python mismatched_control.py
@@ -43,7 +43,6 @@ _REPO = os.path.dirname(_AIPIPE)              # repo root
 SRC_CSV = os.path.join(_AIPIPE, "eval_ragas_reduce_result.csv")
 CORE_CSV = os.path.join(_EXP, "core_eval_set.csv")
 OUT_CSV = os.path.join(_THIS, "mismatched_results.csv")
-OUT_MD = os.path.join(_THIS, "mismatched_report.md")
 
 SEED = 20260607
 
@@ -169,7 +168,7 @@ def main() -> int:
         })
 
     cap_label = "전체" if cap <= 0 else str(cap)
-    print(f"실험 3 mismatched control | 표본 {len(ids)}개 | cap={cap_label} | judge={args.judge_model} | seed={args.seed}")
+    print(f"1층 B mismatched control | 표본 {len(ids)}개 | cap={cap_label} | judge={args.judge_model} | seed={args.seed}")
     print("정상(자기 근거) 채점 중...", flush=True)
     normal = _faithfulness_scores(normal_samples, args.judge_model)
     print("mismatched(다른 게임 근거) 채점 중...", flush=True)
@@ -201,52 +200,19 @@ def main() -> int:
     mean_drop = sum(r["drop"] for r in valid) / n if n else float("nan")
     dropped = sum(1 for r in valid if r["drop"] > 0)
 
-    wilcoxon_line = ""
     try:
         from scipy.stats import wilcoxon
         stat, p = wilcoxon([r["normal_faith"] for r in valid],
                            [r["mismatched_faith"] for r in valid])
-        wilcoxon_line = f"- Wilcoxon 부호순위: W={stat:.1f}, p={p:.4g}\n"
+        wilcoxon_line = f"Wilcoxon 부호순위: W={stat:.1f}, p={p:.4g}"
     except Exception as e:
-        wilcoxon_line = f"- Wilcoxon: 미계산({type(e).__name__})\n"
+        wilcoxon_line = f"Wilcoxon: 미계산({type(e).__name__})"
 
-    lines = [
-        "# 실험 3 — RAGAS faithfulness 신뢰도: mismatched context (negative control)",
-        "",
-        f"- 표본: 코어셋 {n}개 | context cap: {cap_label} | judge: {args.judge_model} | seed: {args.seed}",
-        f"- 짝짓기: 시드 고정 derangement(고정점 없음). 각 게임 요약에 **다른 게임 근거**를 물림.",
-        "",
-        "## 집계",
-        "",
-        f"- 평균 faithfulness — 정상(자기 근거): **{mean_normal:.3f}**",
-        f"- 평균 faithfulness — mismatched(타 게임 근거): **{mean_mism:.3f}**",
-        f"- 평균 하락폭: **{mean_drop:.3f}**  ({dropped}/{n} 게임에서 하락)",
-        wilcoxon_line.rstrip("\n"),
-        "",
-        "## 해석",
-        "",
-        ("mismatched에서 faithfulness가 크게 하락하면, 지표가 '요약이 실제로 그 근거에 "
-         "지지되는가'를 본다는 뜻 → 헤드라인 0.931의 타당성을 뒷받침한다. "
-         "하락이 작거나 없으면 지표가 grounding을 제대로 판별하지 못한다는 신호다."),
-        "",
-        "## 게임별",
-        "",
-        "| id | 게임 | 정상 | mismatched | 하락 | 근거출처 |",
-        "|---|---|---|---|---|---|",
-    ]
-    for r in recs:
-        lines.append(
-            f"| {r['game_id']} | {r['title']} | "
-            f"{r['normal_faith'] if r['normal_faith'] is not None else '—'} | "
-            f"{r['mismatched_faith'] if r['mismatched_faith'] is not None else '—'} | "
-            f"{r['drop'] if r['drop'] is not None else '—'} | game {r['mismatched_from']} |"
-        )
-    with open(OUT_MD, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines) + "\n")
-
-    print(f"\n정상 평균 {mean_normal:.3f} → mismatched 평균 {mean_mism:.3f} "
-          f"(하락 {mean_drop:.3f}, {dropped}/{n})")
-    print(f"→ {OUT_CSV}\n→ {OUT_MD}")
+    # 집계·검정·해석은 ANALYSIS.md 'B. mismatched 검증'으로 통합(별도 리포트 미생성).
+    print(f"\n정상(자기 근거) 평균 {mean_normal:.3f} → mismatched(타 게임 근거) 평균 {mean_mism:.3f} "
+          f"(하락 {mean_drop:.3f}, {dropped}/{n} 게임)")
+    print(wilcoxon_line)
+    print(f"→ {OUT_CSV}")
     return 0
 
 

@@ -1,0 +1,21 @@
+﻿game_id,title,critic_faith,critic_n_ctx,user_faith,user_n_ctx
+11,Dragon Age: The Veilguard,1.0,44,0.95,230
+12,The Witcher 3: Wild Hunt,1.0,33,1.0,351
+20,Star Wars Jedi: Fallen Order,1.0,34,1.0,320
+31,Forza Horizon 5,0.9,21,0.9444,302
+32,Death Stranding,1.0,58,0.9444,179
+34,A Plague Tale: Innocence,1.0,34,1.0,210
+39,God of War Ragnarök,1.0,41,1.0,298
+49,Hitman World of Assassination,1.0,4,1.0,303
+53,Star Wars Jedi: Survivor,0.9333,26,1.0,326
+59,Monster Hunter Rise,0.8824,47,0.9524,252
+67,Clair Obscur: Expedition 33,1.0,60,1.0,375
+70,Dragon Age: Inquisition,0.8889,45,1.0,202
+74,Dave the Diver,1.0,46,1.0,314
+75,Battlefield 2042,0.9565,84,1.0,245
+78,The Outer Worlds,1.0,34,1.0,200
+79,Dead by Daylight,1.0,16,1.0,353
+86,TEKKEN 8,1.0,26,1.0,366
+87,Street Fighter 6,1.0,33,0.9444,342
+94,Overwatch 2,0.84,60,1.0,372
+99,Balatro,1.0,35,1.0,315

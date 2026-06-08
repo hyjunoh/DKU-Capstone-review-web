@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""실험 1 — 결정성/재현성: 같은 payload로 reduce를 N회 반복해 점수 분산 측정.
+"""2층 — 결정성/재현성: 같은 payload로 reduce를 N회 반복해 점수 분산 측정.
 
 주장: "점수는 코드가 결정하고 LLM은 검증된 delta만 제안한다 → 같은 입력에 같은 점수."
 검증: 저장된 reduce_payload(Map 결과 고정)를 그대로 run_feature_reduce_stage에 N회 넣어
@@ -7,10 +7,12 @@
 
 - 입력: experiments/payloads/game_{id}_*.json (build_eval_payloads.py 산출, 최신본)
 - 반복: 게임당 REDUCE_REPLAYS회(기본 6)
-- 출력(이 폴더): determinism_matrix.csv(게임×런 점수), determinism_summary.csv, determinism_report.md
+- 대상: 인자 미지정 시 확정된 5게임(DEFAULT_GAMES)만. 다른 게임은 인자로 명시.
+- 출력(이 폴더): determinism_matrix.csv(게임×런 점수), determinism_summary.csv
+  (집계·검정·해석은 ANALYSIS.md로 통합 — 별도 리포트 미생성)
 
 실행(컨테이너):
-  docker exec capstone_backend python /workspace/ai-pipeline/experiments/exp1_determinism/replay_determinism.py
+  docker exec capstone_backend python /workspace/ai-pipeline/experiments/layer2_determinism/replay_determinism.py
 """
 from __future__ import annotations
 
@@ -36,7 +38,9 @@ _EXP = os.path.dirname(_THIS)
 PAYLOAD_DIR = os.path.join(_EXP, "payloads")
 OUT_MATRIX = os.path.join(_THIS, "determinism_matrix.csv")
 OUT_SUMMARY = os.path.join(_THIS, "determinism_summary.csv")
-OUT_MD = os.path.join(_THIS, "determinism_report.md")
+
+# 2층 확정 표본(5게임). 인자 미지정 시 이 게임들만 리플레이한다.
+DEFAULT_GAMES = [11, 12, 20, 32, 79]
 
 REPLAYS = int(os.getenv("REDUCE_REPLAYS", "6"))
 MODEL = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
@@ -44,7 +48,7 @@ MODEL = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
 
 def _groq_keys() -> str:
     """레포 .env의 GROQ_API_KEYS를 우선 사용(컨테이너 재시작 없이 키 추가 반영)."""
-    repo = os.path.dirname(os.path.dirname(_EXP))  # exp1_determinism→experiments→ai-pipeline→repo
+    repo = os.path.dirname(os.path.dirname(_EXP))  # layer2_determinism→experiments→ai-pipeline→repo
     env_path = os.path.join(repo, ".env")
     if os.path.exists(env_path):
         for line in open(env_path, encoding="utf-8"):
@@ -106,7 +110,8 @@ def _std(vals: list[float]) -> float:
 
 
 def _write_outputs(results: list[dict]):
-    """현재까지 results로 matrix·summary·report 3종을 (재)기록. (sent_std_mean, asp_std_mean, perfect_sent, perfect_asp, n) 반환."""
+    """현재까지 results로 matrix·summary CSV 2종을 (재)기록. (sent_std_mean, asp_std_mean, perfect_sent, perfect_asp, n) 반환.
+    집계·검정·해석은 ANALYSIS.md로 통합 — 별도 리포트 미생성."""
     all_aspects = sorted({a for r in results for _, asp in r["runs"] for a in asp})
     with open(OUT_MATRIX, "w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
@@ -140,36 +145,6 @@ def _write_outputs(results: list[dict]):
     asp_std_mean = statistics.mean(r["aspect_std_mean"] for r in summ_rows) if n else 0
     perfect_sent = sum(1 for r in summ_rows if r["sentiment_std"] == 0)
     perfect_asp = sum(1 for r in summ_rows if r["aspect_std_max"] == 0)
-    lines = [
-        "# 실험 1 — 결정성/재현성 (reduce 리플레이)",
-        "",
-        f"- 표본 {n}개 | 게임당 reduce {REPLAYS}회 반복 (같은 payload, Map 재실행 없음) | model {MODEL}",
-        "- 주장: 점수는 코드가 결정(LLM은 검증된 delta만) → 같은 입력에 같은 점수.",
-        "",
-        "## 집계",
-        f"- sentiment_score(0–100) 표준편차 평균: **{sent_std_mean:.3f}** "
-        f"(완전 동일 {perfect_sent}/{n} 게임)",
-        f"- aspect 점수(0–10) 게임별 std 평균: **{asp_std_mean:.3f}** "
-        f"(모든 aspect 완전 동일 {perfect_asp}/{n} 게임)",
-        "",
-        "## 게임별 (std=0이면 N회 반복에도 점수 불변)",
-        "",
-        "| id | 게임 | 반복 | sentiment 평균 | sentiment std | aspect std 평균 | aspect std 최대 |",
-        "|---|---|---|---|---|---|---|",
-    ]
-    for r in summ_rows:
-        lines.append(
-            f"| {r['game_id']} | {r['title']} | {r['runs']} | {r['sentiment_mean']} | "
-            f"{r['sentiment_std']} | {r['aspect_std_mean']} | {r['aspect_std_max']} |"
-        )
-    lines += [
-        "",
-        "## 해석",
-        ("sentiment·aspect 점수의 std가 0(또는 ≈0)이면, reduce LLM 출력이 매번 달라도 최종 점수는 "
-         "코드가 결정론적으로 산출함을 의미한다. std가 큰 항목이 있으면 어디서 비결정성이 들어오는지 "
-         "함께 보고한다(LLM delta가 코드 가드를 통과해 점수에 반영되는 경계)."),
-    ]
-    open(OUT_MD, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     return sent_std_mean, asp_std_mean, perfect_sent, perfect_asp, n
 
 
@@ -199,15 +174,16 @@ async def main_async(game_ids: list[int] | None) -> int:
     sent_std_mean, asp_std_mean, perfect_sent, perfect_asp, n = _write_outputs(results)
     print(f"\nsentiment std 평균 {sent_std_mean:.3f} | aspect std 평균 {asp_std_mean:.3f} "
           f"| 점수불변 {perfect_sent}/{n}(sentiment), {perfect_asp}/{n}(aspect)")
-    print(f"→ {OUT_MATRIX}\n→ {OUT_SUMMARY}\n→ {OUT_MD}")
+    print(f"→ {OUT_MATRIX}\n→ {OUT_SUMMARY}")
     return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("game_ids", type=int, nargs="*")
+    ap.add_argument("game_ids", type=int, nargs="*",
+                    help=f"리플레이할 game_id. 미지정 시 확정 5게임 {DEFAULT_GAMES}")
     args = ap.parse_args()
-    return asyncio.run(main_async(args.game_ids or None))
+    return asyncio.run(main_async(args.game_ids or DEFAULT_GAMES))
 
 
 if __name__ == "__main__":
