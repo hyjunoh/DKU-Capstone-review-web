@@ -1,0 +1,122 @@
+# 운영(단일 VM) 전용 compose. 개발은 docker-compose.yml 사용.
+# 실행: docker compose -f docker-compose.prod.yml up -d --build
+#
+# 개발 compose와 차이:
+#   - 코드 볼륨 마운트 / 런타임 pip install / --reload 제거 (이미지에 코드·deps 구움)
+#   - postgres/redis는 호스트 localhost(127.0.0.1)에만 바인딩 → 외부 비공개
+#   - adminer 제거
+#   - DB 비밀번호는 .env의 POSTGRES_PASSWORD로 주입
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: capstone_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: review_db
+    ports:
+      - "127.0.0.1:5432:5432"   # VM 내부(VSCode)에서만 접근, 외부 비공개
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/03_migration_sprint2.sql:/docker-entrypoint-initdb.d/03_migration_sprint2.sql
+      - ./database/04_migration_sprint3_m001.sql:/docker-entrypoint-initdb.d/04_migration_sprint3_m001.sql
+      - ./database/05_migration_sprint3_m002.sql:/docker-entrypoint-initdb.d/05_migration_sprint3_m002.sql
+      - ./database/06_migration_sprint3_m003.sql:/docker-entrypoint-initdb.d/06_migration_sprint3_m003.sql
+      - ./database/07_migration_sprint3_m005.sql:/docker-entrypoint-initdb.d/07_migration_sprint3_m005.sql
+      - ./database/08_migration_sprint4.sql:/docker-entrypoint-initdb.d/08_migration_sprint4.sql
+      - ./database/09_migration_sprint4_fixes.sql:/docker-entrypoint-initdb.d/09_migration_sprint4_fixes.sql
+      - ./database/10_migration_sprint4_failure_stats.sql:/docker-entrypoint-initdb.d/10_migration_sprint4_failure_stats.sql
+      - ./database/10_migration_sprint6_fixes.sql:/docker-entrypoint-initdb.d/11_migration_sprint6_fixes.sql
+      - ./database/12_migration_one_liner_separation.sql:/docker-entrypoint-initdb.d/12_migration_one_liner_separation.sql
+      - ./database/13_migration_user_summary_split.sql:/docker-entrypoint-initdb.d/13_migration_user_summary_split.sql
+      - ./database/14_migration_recommendation_targets.sql:/docker-entrypoint-initdb.d/14_migration_recommendation_targets.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: capstone_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"   # VM 내부에서만 접근, 외부 비공개
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: capstone-backend:prod      # scheduler가 동일 이미지 재사용
+    container_name: capstone_backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"   # frontend nginx가 내부서 프록시. 직접 접근은 VM 로컬만
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/review_db
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_API_KEYS=${GROQ_API_KEYS}
+      - GROQ_MODEL=${GROQ_MODEL:-meta-llama/llama-4-scout-17b-16e-instruct}
+      - MAP_BACKEND=${MAP_BACKEND:-groq}
+      - API_SECRET_KEY=${API_SECRET_KEY}
+    # 운영: --reload 없음, 워커 다중화. 코드·deps는 이미지에 구워짐(볼륨 없음).
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    image: capstone-backend:prod      # backend 이미지 재사용(별도 빌드 안 함)
+    container_name: capstone_scheduler
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/review_db
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_API_KEYS=${GROQ_API_KEYS}
+      - GROQ_MODEL=${GROQ_MODEL:-meta-llama/llama-4-scout-17b-16e-instruct}
+      - MAP_BACKEND=${MAP_BACKEND:-groq}
+      - API_SECRET_KEY=${API_SECRET_KEY}
+      - INTERNAL_API_BASE=${INTERNAL_API_BASE:-http://backend:8000}
+      - CRAWL_RECENT_PER_LANG=${CRAWL_RECENT_PER_LANG:-100}
+    command: python -m app.jobs.scheduler --loop
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: capstone_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"                 # 외부 공개(HTTP). TLS는 VM 앞단 reverse proxy로 별도.
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,27 @@
+# 가상환경 / 의존성
+.venv*/
+**/__pycache__/
+**/*.pyc
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# git / 에디터
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# 환경/시크릿 (이미지에 굽지 않음 — 런타임 env로 주입)
+.env
+.env.*
+!.env.example
+
+# 평가/실험 산출물 (운영 이미지 불필요)
+.venv-ragas/
+.venv-ragas-win311/
+*.md
+docs/
+map_compare_results.md
+run_local_map.ps1
+demo.py
