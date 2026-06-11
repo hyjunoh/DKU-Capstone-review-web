@@ -1429,7 +1429,7 @@ async def run_reduce_from_precomputed_map(
             if _HAS_GEMINI_RELIABILITY:
                 reliability = compute_reduce_reliability(
                     ai_result=ai_result,
-                    input_reviews=summary_reviews,
+                    input_reviews=aspect_reviews,
                     steam_recommend_ratio=steam_recommend_ratio,
                 )
                 job.schema_compliance     = reliability.schema_compliance
@@ -1438,7 +1438,7 @@ async def run_reduce_from_precomputed_map(
                 job.anchor_deviation      = reliability.anchor_deviation
 
             if _HAS_SEMANTIC_SIMILARITY:
-                selected_texts = [r.review_text_clean for r in summary_reviews[:50] if r.review_text_clean]
+                selected_texts = [r.review_text_clean for r in aspect_reviews[:50] if r.review_text_clean]
                 synthesized_summary = "\n".join(
                     part for part in [
                         ai_result.one_liner,
